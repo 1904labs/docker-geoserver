@@ -4,6 +4,8 @@ FROM openjdk:8-jdk-slim-buster
 ARG BUILD_DATE=None
 ARG VCS_REF=None
 ARG BUILD_VERSION=None
+ARG GEOSERVER_VERSION
+ARG TOMCAT_VERSION=9.0.37
 
 # Labels.
 LABEL maintainer="gjunge@1904labs.com" \
@@ -16,10 +18,8 @@ LABEL maintainer="gjunge@1904labs.com" \
       org.label-schema.vcs-ref=${VCS_REF} \
       org.label-schema.vendor="1904labs" \
       org.label-schema.version=${BUILD_VERSION} \
-      org.label-schema.docker.cmd="docker run -p 8080:8080 -d 1904labs/geoserver"
+      org.label-schema.docker.cmd="docker run -p 8080:8080 -d 1904labs/geoserver:${GEOSERVER_VERSION}"
 
-ARG TOMCAT_VERSION=9.0.36
-ARG GEOSERVER_VERSION=2.17.1
 
 RUN set -ex && \
     sed -i 's/main$/main contrib/' /etc/apt/sources.list && \
@@ -34,6 +34,7 @@ RUN set -ex && \
   mkdir -p /opt/tomcat && \
   curl -sSLO https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz && \
   tar -xzvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C /opt/tomcat --strip-components=1 && \
+  rm -rf /opt/tomcat/webapps/* && \
   rm apache-tomcat-${TOMCAT_VERSION}.tar.gz
 
 # Install geoserver
@@ -42,7 +43,8 @@ RUN set -ex && \
   curl -sSLO  https://downloads.sourceforge.net/project/geoserver/GeoServer/${GEOSERVER_VERSION}/geoserver-${GEOSERVER_VERSION}-war.zip && \
   unzip geoserver-${GEOSERVER_VERSION}-war.zip geoserver.war && \
   unzip -o geoserver.war -d /opt/tomcat/webapps/geoserver && \
-  rm -r /opt/tomcat/webapps/geoserver/META-INF
+  rm -r /opt/tomcat/webapps/geoserver/META-INF && \
+  ln -s /opt/tomcat/webapps/geoserver /opt/tomcat/webapps/ROOT
 
 # Install geoserver WPS plugin
 RUN set -ex && \

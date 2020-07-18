@@ -1,25 +1,20 @@
-#!/bin/sh -x
+#!/bin/bash 
 
-case $* in
-  *--test*)
-    BUILD_DATE=$(date -u +'%Y-%m-%d')
-    VCS_REF=test
-    BUILD_VERSION=test
-    ;;
-  *)
-    BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-    VCS_REF=$(git rev-parse --short --verify HEAD)
-    BUILD_VERSION=$(git describe --tags ${VCS_REF})
-    BUILD_TAG=$(echo ${BUILD_VERSION} | cut -d- -f1)
-    ;;
-esac
+env
+
+BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+VCS_REF=$(git rev-parse --short --verify HEAD)
+BUILD_VERSION=$(git describe --tags ${VCS_REF} | cut -c2-)
+BUILD_TAG=${BUILD_VERSION#*-}
 
 docker build . \
   --build-arg BUILD_DATE=${BUILD_DATE} \
   --build-arg VCS_REF=${VCS_REF} \
   --build-arg BUILD_VERSION=${BUILD_VERSION} \
-  --tag "1904labs/geoserver:${BUILD_TAG}"
+  --build-arg GEOSERVER_VERSION=${BUILD_TAG} \
+  --tag "1904labs/geoserver:${BUILD_TAG:-unknown}"
 
-if [ "$BUILD_VERSION" != "test" ]; then
-  docker tag "1904labs/geoserver:${BUILD_TAG}" "1904labs/geoserver:latest"
-fi
+# docker tag "1904labs/geoserver:${BUILD_TAG}" "1904labs/geoserver:latest"
+
+echo To run this image:
+echo $(docker inspect 1904labs/geoserver:${GEOSERVER_VERSION} --format '{{index .ContainerConfig.Labels "org.label-schema.docker.cmd"}}')
