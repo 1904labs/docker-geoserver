@@ -17,4 +17,4 @@ docker build . \
 # docker tag "1904labs/geoserver:${BUILD_TAG}" "1904labs/geoserver:latest"
 
 echo To run this image:
-echo $(docker inspect 1904labs/geoserver:${GEOSERVER_VERSION} --format '{{index .ContainerConfig.Labels "org.label-schema.docker.cmd"}}')
+echo $(docker inspect 1904labs/geoserver:${BUILD_TAG} --format '{{index .ContainerConfig.Labels "org.label-schema.docker.cmd"}}')
