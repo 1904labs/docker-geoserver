@@ -21,8 +21,8 @@ LABEL maintainer="gjunge@1904labs.com" \
       org.label-schema.docker.cmd="docker run -p 8080:8080 -d 1904labs/geoserver:${GEOSERVER_VERSION}"
 
 ENV CATALINA_HOME=/opt/tomcat \
-    GEOSERVER_DIR=/opt/tomcat/webapps/geoserver \
-    GEOSERVER_DATA_DIR=/opt/tomcat/webapps/geoserver/data
+    GEOSERVER_DIR=/opt/tomcat/webapps/ROOT \
+    GEOSERVER_DATA_DIR=/opt/tomcat/webapps/ROOT/data
 
 RUN set -ex && \
     sed -i 's/main$/main contrib/' /etc/apt/sources.list && \
@@ -46,8 +46,7 @@ RUN set -ex && \
   curl -sSLO  https://downloads.sourceforge.net/project/geoserver/GeoServer/${GEOSERVER_VERSION}/geoserver-${GEOSERVER_VERSION}-war.zip && \
   unzip geoserver-${GEOSERVER_VERSION}-war.zip geoserver.war && \
   unzip -o geoserver.war -d ${GEOSERVER_DIR} && \
-  rm -r ${GEOSERVER_DIR}/META-INF && \
-  ln -s ${GEOSERVER_DIR} ${CATALINA_HOME}/webapps/ROOT
+  rm -r ${GEOSERVER_DIR}/META-INF 
 
 # Install geoserver WPS plugin
 RUN set -ex && \
