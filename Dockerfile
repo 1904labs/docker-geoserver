@@ -20,6 +20,9 @@ LABEL maintainer="gjunge@1904labs.com" \
       org.label-schema.version=${BUILD_VERSION} \
       org.label-schema.docker.cmd="docker run -p 8080:8080 -d 1904labs/geoserver:${GEOSERVER_VERSION}"
 
+ENV CATALINA_HOME=/opt/tomcat \
+    GEOSERVER_DIR=/opt/tomcat/webapps/geoserver \
+    GEOSERVER_DATA_DIR=/opt/tomcat/webapps/geoserver/data
 
 RUN set -ex && \
     sed -i 's/main$/main contrib/' /etc/apt/sources.list && \
@@ -31,37 +34,39 @@ WORKDIR /tmp
 
 # Install tomcat
 RUN set -ex && \
-  mkdir -p /opt/tomcat && \
+  mkdir -p ${CATALINA_HOME} && \
   curl -sSLO https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz && \
-  tar -xzvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C /opt/tomcat --strip-components=1 && \
-  rm -rf /opt/tomcat/webapps/* && \
+  tar -xzvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C ${CATALINA_HOME} --strip-components=1 && \
+  rm -rf ${CATALINA_HOME}/webapps/* && \
   rm apache-tomcat-${TOMCAT_VERSION}.tar.gz
 
 # Install geoserver
 RUN set -ex && \
-  mkdir -p /opt/tomcat/webapps/geoserver && \
+  mkdir -p ${GEOSERVER_DIR} && \
   curl -sSLO  https://downloads.sourceforge.net/project/geoserver/GeoServer/${GEOSERVER_VERSION}/geoserver-${GEOSERVER_VERSION}-war.zip && \
   unzip geoserver-${GEOSERVER_VERSION}-war.zip geoserver.war && \
-  unzip -o geoserver.war -d /opt/tomcat/webapps/geoserver && \
-  rm -r /opt/tomcat/webapps/geoserver/META-INF && \
-  ln -s /opt/tomcat/webapps/geoserver /opt/tomcat/webapps/ROOT
+  unzip -o geoserver.war -d ${GEOSERVER_DIR} && \
+  rm -r ${GEOSERVER_DIR}/META-INF && \
+  ln -s ${GEOSERVER_DIR} ${CATALINA_HOME}/webapps/ROOT
 
 # Install geoserver WPS plugin
 RUN set -ex && \
   curl -sSLO https://downloads.sourceforge.net/project/geoserver/GeoServer/${GEOSERVER_VERSION}/extensions/geoserver-${GEOSERVER_VERSION}-wps-plugin.zip && \
-  unzip -jo geoserver-${GEOSERVER_VERSION}-wps-plugin.zip -d /opt/tomcat/webapps/geoserver/WEB-INF/lib/ 
+  unzip -jo geoserver-${GEOSERVER_VERSION}-wps-plugin.zip -d ${GEOSERVER_DIR}/WEB-INF/lib/ 
 
 # create tomcat user
 RUN set -x && \
    groupadd tomcat && \
-   useradd -s /bin/nologin -g tomcat -Md /opt/tomcat tomcat && \
-   chown -R tomcat:tomcat /opt/tomcat
+   useradd -s /bin/nologin -g tomcat -Md ${CATALINA_HOME} tomcat && \
+   chown -R tomcat:tomcat ${CATALINA_HOME}
 
 # clenaup
-RUN rm -rf /tmp/* 
+RUN rm -rf /tmp/*
+COPY bin /usr/local/bin
 
 USER tomcat
-WORKDIR /opt/tomcat/webapps/geoserver
+WORKDIR ${GEOSERVER_DIR}
 EXPOSE 8080
 ENV CATALINA_OPTS "-Xmx8g -XX:MaxPermSize=512M -Duser.timezone=UTC -server -Djava.awt.headless=true"
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/opt/tomcat/bin/catalina.sh", "run"]
