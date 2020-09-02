@@ -4,7 +4,7 @@ FROM openjdk:8-jdk-slim-buster
 ARG BUILD_DATE=None
 ARG VCS_REF=None
 ARG BUILD_VERSION=None
-ARG GEOSERVER_VERSION
+ARG GEOSERVER_VERSION=2.17.1
 ARG TOMCAT_VERSION=9.0.37
 
 # Labels.
@@ -27,7 +27,7 @@ ENV CATALINA_HOME=/opt/tomcat \
 RUN set -ex && \
     sed -i 's/main$/main contrib/' /etc/apt/sources.list && \
     apt-get update && \
-    apt-get install -y curl msttcorefonts libfreetype6 fontconfig unzip && \
+    apt-get install -y curl gawk msttcorefonts libfreetype6 fontconfig unzip && \
     rm -rf /var/cache/apt/*
 
 WORKDIR /tmp
@@ -48,10 +48,12 @@ RUN set -ex && \
   unzip -o geoserver.war -d ${GEOSERVER_DIR} && \
   rm -r ${GEOSERVER_DIR}/META-INF 
 
-# Install geoserver WPS plugin
+# Install geoserver plugins
 RUN set -ex && \
-  curl -sSLO https://downloads.sourceforge.net/project/geoserver/GeoServer/${GEOSERVER_VERSION}/extensions/geoserver-${GEOSERVER_VERSION}-wps-plugin.zip && \
-  unzip -jo geoserver-${GEOSERVER_VERSION}-wps-plugin.zip -d ${GEOSERVER_DIR}/WEB-INF/lib/ 
+  for PLUGIN in $(curl -sSL https://sourceforge.net/projects/geoserver/rss?path=/GeoServer/${GEOSERVER_VERSION}/extensions \
+  | gawk 'match($0, /<link>(.*)\/download<\/link>/, m){print m[1]}') \
+  ; do curl -sSLO $PLUGIN && unzip -jo -W $(basename $PLUGIN) -d ${GEOSERVER_DIR}/WEB-INF/lib/ \
+  ; done
 
 # create tomcat user
 RUN set -x && \
