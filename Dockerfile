@@ -51,7 +51,8 @@ RUN set -ex && \
 # Install geoserver plugins
 RUN set -ex && \
   for PLUGIN in $(curl -sSL https://sourceforge.net/projects/geoserver/rss?path=/GeoServer/${GEOSERVER_VERSION}/extensions \
-  | gawk 'match($0, /<link>(.*)\/download<\/link>/, m){print m[1]}') \
+  | gawk 'match($0, /<link>(.*)\/download<\/link>/, m){print m[1]}' \
+  | grep 'excel|gdal|importer|inspire|imagemap|jdbc|libjpeg|querylayer|wcs|wfs|wps|vectortiles|xslt') \
   ; do curl -sSLO $PLUGIN && unzip -jo -W $(basename $PLUGIN) -d ${GEOSERVER_DIR}/WEB-INF/lib/ \
   ; done
 
